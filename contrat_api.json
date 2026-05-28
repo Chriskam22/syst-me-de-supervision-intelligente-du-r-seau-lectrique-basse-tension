@@ -1,0 +1,10 @@
+{
+  "id_noeud": 1,
+  "identifiant_lora": "LORA-LUB-001",
+  "tension": 220.0,
+  "courant": 10.5,
+  "puissance": 2310.0,
+  "facteur_puissance": 0.95,
+  "latitude": -11.660890,
+  "longitude": 27.479380
+}
