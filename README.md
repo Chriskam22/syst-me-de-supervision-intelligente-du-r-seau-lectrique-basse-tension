@@ -1,117 +1,118 @@
 # Supervision BT Lubumbashi
 
-Groupe 12 - Génie Logiciel - UDBL 2025/2026
+Prototype de supervision intelligente du reseau electrique basse tension de Lubumbashi, combinant une maquette Arduino, une gateway MQTT, une API FastAPI et un dashboard React.
 
-Système de supervision intelligente du réseau électrique basse tension de Lubumbashi.
+## Probleme
 
-Le projet présente deux modes complémentaires :
+La surveillance basse tension manque souvent de visibilite en temps reel : tension instable, incidents locaux, delestage manuel et absence de journal d'evenements centralise. Ce projet propose une maquette pedagogique pour visualiser l'etat d'un noeud basse tension, detecter des anomalies et simuler une extension vers plusieurs cabines et depart BT.
 
-- **Demo soutenance** : démonstration réelle avec Arduino UNO, potentiomètre, relais et le nœud matériel `NODE_LUB_001`.
-- **Vision ville** : projection simulée multi-cabines, multi-départs BT et multi-poteaux pour montrer l'évolution possible du système.
+## Fonctionnalites
 
-Le système est centré sur la supervision du réseau basse tension : cabines, départs BT, poteaux stratégiques, mesures, anomalies, délestage et rétablissement. Il ne surveille pas les maisons individuellement.
+- Lecture d'une tension simulee par potentiometre sur Arduino UNO.
+- Commande d'un relais pour representer le delestage et le retablissement.
+- Gateway serie vers MQTT.
+- API FastAPI avec stockage SQLite.
+- Dashboard React avec carte, indicateurs, journal SCADA et graphiques.
+- WebSocket pour les mesures en temps reel.
+- Mode demo soutenance avec le noeud materiel `NODE_LUB_001`.
+- Mode vision ville avec projection multi-cabines, multi-departs et multi-poteaux.
+- Simulation utilisable sans Arduino.
+
+## Technologies
+
+- Arduino UNO
+- Python
+- FastAPI
+- SQLite
+- MQTT / paho-mqtt
+- WebSocket
+- React
+- Chart.js
+- Leaflet
+- Bash scripts
 
 ## Architecture
 
 ```text
-[Arduino UNO]          [Gateway PC]              [Backend API]
-Potentiomètre A0  ->   Serial JSON   ->  MQTT -> FastAPI -> SQLite
-Relais D2         <-   Commandes MQTT <- REST/API
-                                                    |
-                                                    v
-                                             [Frontend React]
-                                             Carte + SCADA
+[Arduino UNO]
+  Potentiometre A0
+  Relais D2
+      |
+      v
+[Gateway Python]
+  Serial JSON -> MQTT
+      |
+      v
+[Backend FastAPI]
+  API REST + WebSocket + SQLite
+      |
+      v
+[Frontend React]
+  Carte + mesures + journal SCADA
 ```
 
-Chaîne technique :
+Structure du depot :
 
-1. L'Arduino mesure une tension simulée par potentiomètre.
-2. La gateway lit le JSON série et publie sur MQTT.
-3. Le backend FastAPI reçoit les mesures MQTT.
-4. Les mesures et anomalies sont stockées en SQLite.
-5. Le frontend reçoit les mises à jour par WebSocket.
-6. L'opérateur visualise, analyse et envoie les commandes de délestage/rétablissement.
+```text
+arduino/        # Firmware de la maquette
+gateway/        # Lecture serie, publication MQTT, simulation
+backend/        # API FastAPI, stockage et WebSocket
+frontend/       # Dashboard React
+presentation/   # Supports de soutenance
+install.sh      # Installation Ubuntu/Debian
+start.sh        # Lancement des services
+test.sh         # Verification rapide
+```
 
-## Mode Demo Soutenance
+## Installation
 
-Le mode Demo soutenance correspond à la maquette matérielle réelle.
-
-Nœud réel utilisé : `NODE_LUB_001`.
-
-| Arduino UNO | Composant | Rôle |
-| --- | --- | --- |
-| A0 | Potentiomètre 10K | Simule la tension 0-250 V |
-| D2 | Relais 5 V | Délestage / rétablissement |
-| USB | Câble vers PC | Communication Serial JSON à 9600 bauds |
-
-Ce mode permet de démontrer :
-
-| Action | Résultat attendu |
-| --- | --- |
-| Tourner le potentiomètre | Variation de la tension affichée |
-| Tension normale | État normal sur la carte |
-| Tension basse | Alerte / anomalie de tension |
-| Cliquer Délester | Ouverture du relais |
-| Cliquer Rétablir | Fermeture du relais |
-| Consulter le journal SCADA | Événements opérateur et anomalies |
-
-Sans Arduino, il faut rester en mode **Demo soutenance** puis cliquer sur le bouton **Simulation** du dashboard. L'API simule alors uniquement `NODE_LUB_001`.
-
-## Mode Vision Ville
-
-Le mode Vision ville est une projection simulée du système à l'échelle d'un réseau basse tension.
-
-Il affiche :
-
-- plusieurs cabines,
-- plusieurs départs BT par cabine,
-- des poteaux stratégiques,
-- une chute de tension par départ,
-- des courants L1/L2/L3 simulés,
-- un déséquilibre de phase,
-- un journal d'événements SCADA,
-- une carte géographique.
-
-Les données Vision ville sont simulées côté application pour la soutenance. Elles ne représentent pas encore un réseau industriel raccordé en production.
-
-## Localisation
-
-Les coordonnées des cabines et poteaux sont considérées comme saisies lors de l'installation du boîtier ou préparées dans la base du réseau.
-
-Le prototype ne suppose pas un GPS permanent embarqué sur chaque poteau.
-
-## Démarrage Rapide
+Sous Ubuntu/Debian :
 
 ```bash
-# 1. Installer les dépendances sur Ubuntu/Debian
 sudo bash install.sh
-
-# 2. Lancer backend + gateway + frontend
 bash start.sh
-
-# 3. Ouvrir le dashboard
-# http://localhost:3000
-
-# 4. Voir la documentation API
-# http://localhost:8000/docs
 ```
 
-## Utilisation Avec Arduino
+Adresses utiles :
+
+```text
+Dashboard : http://localhost:3000
+API docs  : http://localhost:8000/docs
+```
+
+Installation manuelle :
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## Utilisation avec Arduino
 
 1. Flasher `arduino/noeud_mesure.ino` sur l'Arduino UNO.
 2. Brancher l'Arduino au PC par USB.
-3. Lancer le broker MQTT, le backend, la gateway et le frontend.
-4. Ouvrir `http://localhost:3000`.
-5. Cliquer sur **Demo soutenance**.
-6. Vérifier que le dashboard indique `Arduino connecté`.
+3. Lancer les services.
+4. Ouvrir le dashboard.
+5. Selectionner le mode demo soutenance.
+6. Tourner le potentiometre pour faire varier la tension.
+7. Tester les commandes de delestage et retablissement.
 
-La gateway détecte automatiquement le port série. Si besoin, forcer le port :
+Forcer un port serie :
 
 ```bash
 SERIAL_PORT=/dev/ttyACM0 SIMULATE=false bash start.sh
 ```
 
-Sous Windows avec PowerShell :
+Sous Windows :
 
 ```powershell
 $env:SERIAL_PORT="COM3"
@@ -119,84 +120,44 @@ $env:SIMULATE="false"
 python gateway/gateway.py
 ```
 
-## Utilisation Sans Arduino
+## Utilisation sans Arduino
 
-1. Lancer le backend et le frontend.
-2. Ouvrir le dashboard.
-3. Rester en **Demo soutenance**.
-4. Cliquer sur **Simulation**.
-
-Endpoint équivalent :
+Le prototype peut aussi fonctionner en simulation :
 
 ```bash
 curl -X POST "http://localhost:8000/api/simulation/start?mode=demo"
-```
-
-Pour la projection ville :
-
-```bash
 curl -X POST "http://localhost:8000/api/simulation/start?mode=city"
 ```
 
-## API Principales
+## API principales
 
-| Méthode | Route | Description |
+| Methode | Route | Description |
 | --- | --- | --- |
-| GET | `/api/noeuds` | Liste des nœuds avec dernière mesure |
-| GET | `/api/noeuds/{id}` | Détail d'un nœud |
+| GET | `/api/noeuds` | Liste des noeuds avec derniere mesure |
+| GET | `/api/noeuds/{id}` | Detail d'un noeud |
 | GET | `/api/mesures/historique/{id}` | Historique des mesures |
 | GET | `/api/anomalies` | Liste des anomalies |
-| POST | `/api/commandes/delestage` | Ouvrir ou fermer le relais |
-| POST | `/api/delestage` | Route de secours avec clé API |
-| POST | `/api/mesures` | Injecter une mesure de test |
-| GET | `/api/stats/resume` | Résumé global |
-| POST | `/api/simulation/start?mode=demo` | Simulation mono-poteau |
-| POST | `/api/simulation/start?mode=city` | Simulation multi-poteaux |
-| WS | `/ws` | Mesures temps réel |
+| POST | `/api/commandes/delestage` | Commande relais |
+| POST | `/api/mesures` | Injection d'une mesure de test |
+| GET | `/api/stats/resume` | Resume global |
+| WS | `/ws` | Flux temps reel |
 
-## Structure
+## Captures d'ecran prevues
 
-```text
-.
-├── arduino/noeud_mesure.ino   # Firmware Arduino UNO mono-poteau
-├── gateway/gateway.py         # Serial Arduino -> MQTT, simulation fallback
-├── backend/main.py            # FastAPI + MQTT + SQLite + WebSocket
-├── frontend/src/App.js        # Dashboard React avec modes demo/ville
-├── frontend/src/App.css       # Styles SCADA
-├── install.sh                 # Installation Ubuntu/Debian
-├── start.sh                   # Lancement des services
-└── test.sh                    # Vérification rapide
-```
+- Dashboard global avec carte et etat des noeuds.
+- Vue SCADA avec journal d'evenements.
+- Graphique d'historique de tension.
+- Mode demo soutenance avec `NODE_LUB_001`.
+- Mode vision ville multi-cabines.
+- Photo de la maquette Arduino, potentiometre et relais.
 
-## Limites Du Prototype
+## Limites du prototype
 
-- Pas de compteur intelligent par maison.
-- Pas de surveillance individuelle des maisons.
-- Pas d'analyse détaillée des appareils domestiques.
-- Pas de GPS embarqué permanent sur chaque poteau.
-- Les données du mode Vision ville sont simulées.
-- Le délestage est un prototype par relais sur maquette.
-- Les commandes restent des actions opérateur de démonstration.
-- L'architecture est extensible vers une version industrielle avec modèles de cabines, départs BT, événements SCADA et équipements terrain persistés en base.
+- Le mode vision ville repose sur des donnees simulees.
+- Le projet ne surveille pas individuellement les maisons.
+- Le delestage est represente par une maquette a relais.
+- Le systeme est pedagogique et n'est pas une solution industrielle certifiee.
 
-## Scénario De Démonstration
+## Statut
 
-1. Lancer le backend.
-2. Lancer la gateway.
-3. Lancer le frontend.
-4. Ouvrir le dashboard.
-5. Cliquer sur **Demo soutenance**.
-6. Tourner le potentiomètre.
-7. Observer la tension et l'état du poteau.
-8. Provoquer une chute de tension avec le potentiomètre.
-9. Observer l'anomalie et le journal SCADA.
-10. Cliquer sur **Délester**.
-11. Observer l'ouverture du relais et l'événement SCADA.
-12. Cliquer sur **Rétablir**.
-13. Observer la fermeture du relais et le nouvel événement SCADA.
-14. Cliquer sur **Vision ville**.
-15. Expliquer la projection réseau : cabines, départs BT, poteaux, chute de tension, déséquilibre de phase et événements SCADA.
-
-## Positionnement
-
-SuperVolt est un prototype pédagogique de supervision BT. Il montre une architecture crédible et extensible, mais il ne prétend pas remplacer un système industriel certifié.
+Projet de Genie Logiciel UDBL 2025/2026. Il demontre une chaine complete IoT vers dashboard : capteur, gateway, message broker, API, stockage, temps reel et interface de supervision.
